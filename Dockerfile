@@ -28,3 +28,7 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Buka port 80
 EXPOSE 80
+
+# Tambahkan ini di Dockerfile jika ingin membangun aset di dalam kontainer
+RUN apt-get update && apt-get install -y nodejs npm
+RUN npm install && npm run build
