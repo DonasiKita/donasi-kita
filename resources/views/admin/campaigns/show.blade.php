@@ -8,6 +8,12 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 mb-0">Detail Kampanye</h1>
+                <div class="mt-4 text-center">
+    <a href="{{ route('donation.create', ['campaign_id' => $campaign->id]) }}"
+       class="btn btn-primary btn-lg px-5">
+        <i class="fas fa-donate me-2"></i>Donasi Sekarang
+    </a>
+</div>
                 <div>
                     <a href="{{ route('admin.campaigns.edit', $campaign->id) }}" class="btn btn-warning">
                         <i class="fas fa-edit me-2"></i> Edit

@@ -17,8 +17,8 @@ class Donation extends Model
         'note',
         'payment_status',
         'midtrans_order_id',
-        'midtrans_transaction_id',
         'midtrans_snap_token',
+        'midtrans_transaction_id',
         'payment_data',
         'user_id',
     ];
@@ -38,37 +38,15 @@ class Donation extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function payments()
+    // Scope untuk donasi sukses
+    public function scopeSuccessful($query)
     {
-        return $this->hasMany(Payment::class);
+        return $query->where('payment_status', 'success');
     }
 
-    public function getFormattedAmountAttribute()
+    // Scope untuk donasi pending
+    public function scopePending($query)
     {
-        return 'Rp ' . number_format($this->amount, 0, ',', '.');
-    }
-
-    public function getStatusBadgeAttribute()
-    {
-        $badges = [
-            'pending' => 'badge-warning',
-            'success' => 'badge-success',
-            'failed' => 'badge-danger',
-            'expired' => 'badge-secondary',
-        ];
-
-        return $badges[$this->payment_status] ?? 'badge-secondary';
-    }
-
-    public function getStatusTextAttribute()
-    {
-        $texts = [
-            'pending' => 'Menunggu Pembayaran',
-            'success' => 'Berhasil',
-            'failed' => 'Gagal',
-            'expired' => 'Kadaluarsa',
-        ];
-
-        return $texts[$this->payment_status] ?? $this->payment_status;
+        return $query->where('payment_status', 'pending');
     }
 }

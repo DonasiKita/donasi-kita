@@ -30,17 +30,21 @@ class Campaign extends Model
         return $this->hasMany(Donation::class);
     }
 
-    public function payments()
-    {
-        return $this->hasManyThrough(Payment::class, Donation::class);
-    }
-
-    public function getProgressPercentageAttribute()
+    // Method untuk menghitung progress
+    public function getProgressPercentage()
     {
         if ($this->target_amount == 0) {
             return 0;
         }
-        return min(100, ($this->current_amount / $this->target_amount) * 100);
+
+        $percentage = ($this->current_amount / $this->target_amount) * 100;
+        return min(100, round($percentage, 2));
+    }
+
+    // Accessor untuk progress
+    public function getProgressPercentageAttribute()
+    {
+        return $this->getProgressPercentage();
     }
 
     public function getFormattedTargetAttribute()
@@ -51,5 +55,11 @@ class Campaign extends Model
     public function getFormattedCurrentAttribute()
     {
         return 'Rp ' . number_format($this->current_amount, 0, ',', '.');
+    }
+
+    // Scope untuk campaign aktif
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 }
