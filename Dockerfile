@@ -1,44 +1,34 @@
-# Gunakan base image PHP dengan Apache (Sesuai kode Anda)
-FROM php:8.1-apache
+# 1. GUNAKAN PHP 8.2 (Wajib untuk Laravel 12)
+FROM php:8.2-apache
 
-# 1. Install dependencies sistem & ekstensi PHP
-# Menambahkan git, zip, dan unzip agar Composer bisa bekerja
+# 2. Install dependencies sistem
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    unzip \
-    git \
-    curl \
-    nodejs \
-    npm \
-    && docker-php-ext-install pdo pdo_mysql
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    zip unzip git curl nodejs npm \
+    && docker-php-ext-install pdo pdo_mysql \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Composer secara resmi ke dalam container
+# 3. FIX: Izinkan Git mengakses direktori kerja
+RUN git config --global --add safe.directory /var/www/html
+
+# 4. Setup Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# --- BAGIAN FIX 403 FORBIDDEN (Sesuai kode Anda) ---
+# 5. Konfigurasi Apache (Fix 403 Forbidden)
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite
-# ----------------------------------------------------
 
-# Tentukan folder kerja
 WORKDIR /var/www/html
-
-# Salin seluruh kode program
 COPY . .
 
-# 3. Jalankan Composer Install (Untuk memperbaiki error folder vendor)
+# 6. Jalankan Composer Install (Sekarang akan berhasil karena PHP sudah 8.2)
 RUN composer install --no-dev --optimize-autoloader
 
-# 4. Jalankan Build Aset (Sesuai kode Anda)
+# 7. Build Assets NPM
 RUN npm install && npm run build
 
-# --- PERBAIKI IZIN AKSES (Sesuai kode Anda) ---
-RUN chown -R www-data:www-data /var/www/html
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-# ------------------------------------------
+# 8. Permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
 
-# Buka port 80
 EXPOSE 80
