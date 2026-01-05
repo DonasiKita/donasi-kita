@@ -25,5 +25,20 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=donasikita
 
+  # Container phpMyAdmin untuk manajemen database
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: pma-donasikita
+    restart: always
+    ports:
+      - "8081:80" # Kami gunakan port 8081 agar tidak bentrok dengan Jenkins (8080)
+    environment:
+      - PMA_HOST=db-donasi    # Menghubungkan ke container database
+      - PMA_USER=root         # Username root MySQL
+      - PMA_PASSWORD=donasikita # Password yang Anda buat sebelumnya
+    depends_on:
+      - db-donasi
+
 volumes:
   db_data:
+
