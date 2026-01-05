@@ -21,8 +21,8 @@ pipeline {
         stage('Deploy & Database Migration') {
             steps {
                 script {
-                    sh "docker-compose down || true"
-                    sh "docker-compose up -d"
+                    sh "docker compose down || true"
+                    sh "docker compose up -d"
                     sh "sleep 10"
                     sh "docker exec running-donasi php artisan migrate --force"
                 }

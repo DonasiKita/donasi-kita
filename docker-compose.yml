@@ -1,0 +1,29 @@
+services:
+  # Container Database
+  db-donasi:
+    image: mysql:8.0
+    container_name: mysql-donasi
+    restart: always
+    environment:
+      MYSQL_DATABASE: db_donasikita
+      MYSQL_ROOT_PASSWORD: donasikita
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Container Aplikasi (Project DonasiKita)
+  app-donasi:
+    image: donasi-app:latest
+    container_name: running-donasi
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - db-donasi
+    environment:
+      - DB_HOST=db-donasi
+      - DB_DATABASE=db_donasikita
+      - DB_USERNAME=root
+      - DB_PASSWORD=donasikita
+
+volumes:
+  db_data:
