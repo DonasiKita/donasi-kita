@@ -28,5 +28,14 @@ pipeline {
                 }
             }
         }
+
+        stage('Cleanup Old Data') {
+            steps {
+                script {
+                    // Membersihkan sisa build lama agar disk VM Azure tidak penuh
+                    sh "docker system prune -f"
+                }
+            }
+        }
     }
 }
