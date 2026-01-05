@@ -3,40 +3,63 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 
 class AuthController extends Controller
 {
     public function showLoginForm()
     {
-        if (Auth::check() && Auth::user()->role === 'admin') {
-            return redirect()->route('admin.dashboard');
+        // Cek jika user sudah login dan memang admin, langsung lempar ke dashboard
+        if (Auth::check()) {
+            if (Auth::user()->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
+            // Jika login tapi bukan admin, logout dulu agar tidak stuck
+            Auth::logout();
         }
+
         return view('admin.auth.login');
     }
 
     public function login(Request $request)
     {
+        // 1. Validasi Input
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|min:6',
         ]);
 
+        // 2. Ambil Credentials
         $credentials = $request->only('email', 'password');
-        $credentials['role'] = 'admin';
 
-        if (Auth::attempt($credentials)) {
+        // 3. Cek apakah user mencentang "Ingat Saya" (name="remember" di form HTML)
+        $remember = $request->has('remember');
+
+        // 4. Proses Login
+        if (Auth::attempt($credentials, $remember)) {
+
+            // 5. Cek Role (Keamanan Tambahan)
+            // Jika password benar, tapi role BUKAN admin
+            if (Auth::user()->role !== 'admin') {
+                Auth::logout(); // Tendang keluar
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda tidak memiliki akses Admin.',
+                ])->onlyInput('email');
+            }
+
+            // 6. Jika Password Benar DAN Role Admin
             $request->session()->regenerate();
             return redirect()->route('admin.dashboard')
-                ->with('success', 'Login berhasil!');
+                ->with('success', 'Selamat datang kembali, Admin!');
         }
 
+        // 7. Jika Email/Password Salah
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'email' => 'Email atau password yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 
@@ -45,6 +68,8 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('admin.login');
+
+        return redirect()->route('admin.login')
+            ->with('success', 'Anda telah berhasil logout.');
     }
 }

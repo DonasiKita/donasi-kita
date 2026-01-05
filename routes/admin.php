@@ -1,20 +1,49 @@
 <?php
 
-use App\Http\Controllers\Admin\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\DonationController;
+use App\Http\Controllers\Admin\CampaignController;
 
-// Route untuk admin panel
 Route::prefix('admin')->group(function () {
-    // Login routes
-    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('admin.login');
-    Route::post('/login', [AuthController::class, 'login'])->name('admin.login.submit');
 
-    // Protected admin routes
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Authentication
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/login', [AuthController::class, 'showLoginForm'])
+        ->name('admin.login');
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('admin.login.submit');
+
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->name('admin.logout');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protected Admin Routes
+    |--------------------------------------------------------------------------
+    */
     Route::middleware(['auth', 'admin'])->group(function () {
-        Route::get('/dashboard', [Controller::class, 'dashboard'])->name('admin.dashboard');
-        Route::post('/logout', [AuthController::class, 'logout'])->name('admin.logout');
 
-        // Route khusus untuk bgdn
-        Route::get('/bgdn', [AdminController::class, 'bgdn'])->name('admin.bgdn');
+        // Dashboard
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])
+            ->name('admin.dashboard');
+
+        // BGDN
+        Route::get('/bgdn', [AdminController::class, 'bgdn'])
+            ->name('admin.bgdn');
+
+        // Campaigns (UNTUK SIDEBAR)
+        Route::get('/campaigns', [CampaignController::class, 'index'])
+            ->name('admin.campaigns.index');
+
+        // Donations (UNTUK SIDEBAR)
+        Route::get('/donations', [DonationController::class, 'index'])
+            ->name('admin.donations.index');
     });
 });

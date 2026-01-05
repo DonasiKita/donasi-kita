@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,14 +24,14 @@
             height: 100vh;
             width: 250px;
             background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             transition: all 0.3s;
         }
 
         .sidebar-header {
             padding: 20px;
-            background: rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.1);
             color: white;
             text-align: center;
         }
@@ -42,20 +43,20 @@
         .sidebar-menu a {
             display: block;
             padding: 12px 20px;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             transition: all 0.3s;
         }
 
         .sidebar-menu a:hover {
             color: white;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-left: 4px solid white;
         }
 
         .sidebar-menu a.active {
             color: white;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-left: 4px solid white;
         }
 
@@ -72,7 +73,7 @@
 
         .navbar-top {
             background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             padding: 15px 20px;
             margin: -20px -20px 20px -20px;
         }
@@ -98,7 +99,7 @@
         .card {
             border: none;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
         }
 
@@ -131,6 +132,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -140,11 +142,13 @@
         </div>
 
         <div class="sidebar-menu">
-            <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <a href="{{ route('admin.dashboard') }}"
+                class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
             </a>
 
-            <a href="{{ route('admin.campaigns.index') }}" class="{{ request()->routeIs('admin.campaigns.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.campaigns.index') }}"
+                class="{{ request()->routeIs('admin.campaigns.*') ? 'active' : '' }}">
                 <i class="fas fa-bullhorn"></i> Kampanye
             </a>
 
@@ -170,7 +174,8 @@
                 <i class="fas fa-external-link-alt"></i> Lihat Website
             </a>
 
-            <a href="{{ route('admin.logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            <a href="{{ route('admin.logout') }}"
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
             <form id="logout-form" action="{{ route('admin.logout') }}" method="POST" style="display: none;">
@@ -201,10 +206,12 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li>
                             <a class="dropdown-item" href="{{ route('admin.logout') }}"
-                               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                 <i class="fas fa-sign-out-alt me-2"></i> Logout
                             </a>
                         </li>
@@ -255,4 +262,5 @@
 
     @stack('scripts')
 </body>
+
 </html>
