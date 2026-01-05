@@ -21,14 +21,17 @@ pipeline {
         stage('Deploy & Database Migration') {
             steps {
                 script {
-                    // Gunakan docker-compose (dengan tanda hubung)
+                    // 1. Matikan compose dan hapus kontainer bernama sama secara paksa
                     sh "docker-compose down || true"
+                    sh "docker rm -f mysql-donasi running-donasi || true"
+
+                    // 2. Jalankan ulang dengan kondisi bersih
                     sh "docker-compose up -d"
 
-                    // Memberi waktu database untuk booting
+                    // 3. Jeda 15 detik agar MySQL siap
                     sh "sleep 15"
 
-                    // Jalankan migrasi
+                    // 4. Jalankan migrasi database
                     sh "docker exec running-donasi php artisan migrate --force"
                 }
             }
