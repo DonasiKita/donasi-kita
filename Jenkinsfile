@@ -32,9 +32,10 @@ pipeline {
                     echo "Menunggu MySQL booting..."
                     sh "sleep 30"
 
-                    // 4. Jalankan migrasi dengan mekanisme retry
+                    // 4. Jalankan migrasi DAN seeder
+                    // Gunakan migrate:fresh --seed agar database bersih dan data baru masuk
                     retry(3) {
-                        sh "docker exec running-donasi php artisan migrate --force"
+                        sh "docker exec running-donasi php artisan migrate:fresh --seed --force"
                     }
                 }
             }
