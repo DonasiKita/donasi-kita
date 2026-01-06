@@ -3,8 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\CampaignController;
-// Import Controller Admin dengan Alias
+use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\HomeController;
@@ -16,17 +15,19 @@ use App\Models\Campaign;
 |--------------------------------------------------------------------------
 */
 
-// Public Homepage
+// 1. Public Homepage
+// Mengembalikan view 'home' yang berisi script fetch('/api/')
 Route::get('/', function () {
     return view('home');
 })->name('home');
 
+// Rute ini tetap dipertahankan jika Anda ingin akses via Controller HTML
 Route::get('/home', [HomeController::class, 'index'])->name('homepage');
 
-// Campaign Public Routes
+// 2. Campaign Public Routes
 Route::get('/campaigns', function () {
     $campaigns = Campaign::where('is_active', true)
-        ->orderBy('created_at', 'desc')
+        ->latest()
         ->paginate(9);
     return view('campaigns.index', compact('campaigns'));
 })->name('campaigns.index');
@@ -34,14 +35,14 @@ Route::get('/campaigns', function () {
 Route::get('/campaigns/{id}', function ($id) {
     $campaign = Campaign::with(['donations' => function($query) {
         $query->where('payment_status', 'success')
-              ->orderBy('created_at', 'desc')
+              ->latest()
               ->limit(10);
     }])->findOrFail($id);
 
     return view('campaigns.show', compact('campaign'));
 })->name('campaigns.show');
 
-// Donation Routes (Public / User Side)
+// 3. Donation Routes (Public / User Side)
 Route::prefix('donation')->name('donation.')->group(function () {
     Route::get('/create', [DonationController::class, 'create'])->name('create');
     Route::post('/store', [DonationController::class, 'store'])->name('store');
@@ -52,27 +53,7 @@ Route::prefix('donation')->name('donation.')->group(function () {
     Route::post('/webhook/midtrans', [DonationController::class, 'webhook'])->name('webhook');
 });
 
-// API Routes
-Route::get('/api/donations/status/{orderId}', function ($orderId) {
-    $donation = \App\Models\Donation::where('midtrans_order_id', $orderId)->first();
-
-    if (!$donation) {
-        return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan'], 404);
-    }
-
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'order_id' => $donation->midtrans_order_id,
-            'status' => $donation->payment_status,
-            'amount' => $donation->amount,
-            'donor_name' => $donation->donor_name,
-            'campaign_title' => $donation->campaign->title ?? '',
-        ]
-    ]);
-});
-
-// Admin Routes
+// 4. Admin Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     // Authentication
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -83,15 +64,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        Route::resource('campaigns', CampaignController::class)->except(['show']);
-        Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+        // Menggunakan alias AdminCampaignController untuk menghindari bentrok
+        Route::resource('campaigns', AdminCampaignController::class)->except(['show']);
+        Route::get('campaigns/{campaign}', [AdminCampaignController::class, 'show'])->name('campaigns.show');
 
-        // --- PERBAIKAN: GANTI NAME JADI 'donations.index' (PAKAI S) ---
+        // Perbaikan: Menampilkan daftar donasi di panel admin
         Route::get('donations', [AdminDonationController::class, 'index'])->name('donations.index');
     });
 });
 
+// 5. Fallback Route (404)
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
-

@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers; // <--- Perhatikan namespace harus ada \Api
 
+use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Donation;
-use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function index(): JsonResponse
     {
         try {
-            // Featured campaigns - dengan progress percentage
+            // 1. Ambil Data Kampanye Unggulan
             $featuredCampaigns = Campaign::where('is_active', true)
                 ->orderBy('created_at', 'desc')
                 ->limit(6)
@@ -30,38 +30,33 @@ class HomeController extends Controller
                         'current_amount' => (int) $campaign->current_amount,
                         'progress_percentage' => round($progress, 2),
                         'image_url' => $campaign->image_url,
-                        'is_active' => $campaign->is_active,
                     ];
                 });
 
-            // Statistics - pastikan query benar
-            $totalCampaigns = Campaign::where('is_active', true)->count();
-            $totalDonations = Donation::where('payment_status', 'success')->count();
-            $totalAmount = Donation::where('payment_status', 'success')->sum('amount');
+            // 2. Hitung Statistik (Menyesuaikan variabel yang diminta JavaScript Anda)
+            $statistics = [
+                // Mengambil SUM amount untuk 'total_donations' agar angka besar muncul
+                'total_donations' => (int) Donation::where('payment_status', 'success')->sum('amount'),
+                'total_campaigns' => (int) Campaign::where('is_active', true)->count(),
+                'total_donors'    => (int) Donation::where('payment_status', 'success')
+                                        ->distinct('donor_email')
+                                        ->count('donor_email'),
+            ];
 
-            // Hitung total donatur unik (berdasarkan email)
-            $totalDonors = Donation::where('payment_status', 'success')
-                ->distinct('donor_email')
-                ->count('donor_email');
-
-            return view('home', compact(
-                'featuredCampaigns',
-                'totalCampaigns',
-                'totalDonations',
-                'totalAmount',
-                'totalDonors'
-            ));
+            // 3. Kembalikan format JSON sesuai permintaan script home.blade.php
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'statistics' => $statistics,
+                    'featured_campaigns' => $featuredCampaigns
+                ]
+            ]);
 
         } catch (\Exception $e) {
-            // Fallback jika ada error
-            return view('home', [
-                'featuredCampaigns' => collect(),
-                'totalCampaigns' => 0,
-                'totalDonations' => 0,
-                'totalAmount' => 0,
-                'totalDonors' => 0,
-                'error' => $e->getMessage()
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
