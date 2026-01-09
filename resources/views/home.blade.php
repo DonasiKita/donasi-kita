@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +19,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        /* --- PERBAIKAN CSS HERO SECTION --- */
         .hero-section {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
@@ -36,6 +38,16 @@
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="white"/></svg>');
             background-size: cover;
             opacity: 0.1;
+            z-index: 0;
+            /* Background di lapisan bawah */
+            pointer-events: none;
+            /* Agar klik tembus ke bawah jika perlu */
+        }
+
+        /* Agar tombol dan teks muncul di atas background */
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
         }
 
         .campaign-card {
@@ -48,7 +60,7 @@
 
         .campaign-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
 
         .campaign-card img {
@@ -84,7 +96,7 @@
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
         }
 
@@ -116,8 +128,8 @@
         }
     </style>
 </head>
+
 <body>
-    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ url('/') }}">
@@ -150,26 +162,27 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
     <section class="hero-section">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
                     <h1 class="display-4 fw-bold mb-4">Bersama Wujudkan Kebaikan</h1>
-                    <p class="lead mb-4">Platform crowdfunding dan donasi online yang aman, transparan, dan terpercaya untuk membantu sesama yang membutuhkan.</p>
-                    <a href="#campaigns" class="btn btn-light btn-lg px-4">
+                    <p class="lead mb-4">Platform crowdfunding dan donasi online yang aman, transparan, dan terpercaya
+                        untuk membantu sesama yang membutuhkan.</p>
+
+                    <a href="{{ route('campaigns.index') }}" class="btn btn-light btn-lg px-4">
                         <i class="fas fa-heart me-2"></i>Mulai Donasi
                     </a>
+
                 </div>
                 <div class="col-lg-6">
                     <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600"
-                         alt="Hero" class="img-fluid rounded shadow">
+                        alt="Hero" class="img-fluid rounded shadow">
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Statistics -->
     <section class="py-5 bg-light">
         <div class="container">
             <div class="row text-center">
@@ -195,7 +208,6 @@
         </div>
     </section>
 
-    <!-- Featured Campaigns -->
     <section id="campaigns" class="py-5">
         <div class="container">
             <div class="row mb-5">
@@ -206,18 +218,16 @@
             </div>
 
             <div class="row" id="campaignsContainer">
-                <!-- Campaigns will be loaded here -->
             </div>
 
             <div class="text-center mt-5">
-                <a href="#" class="btn btn-outline-primary btn-lg">
+                <a href="{{ route('campaigns.index') }}" class="btn btn-outline-primary btn-lg">
                     <i class="fas fa-list me-2"></i>Lihat Semua Kampanye
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- Features -->
     <section class="py-5 bg-light" id="about">
         <div class="container">
             <div class="row mb-5">
@@ -261,13 +271,13 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer id="contact">
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-4">
                     <h4 class="mb-4">💝 DonasiKita</h4>
-                    <p>Platform crowdfunding dan donasi online berbasis cloud untuk membantu sesama dengan cara yang mudah, transparan, dan terpercaya.</p>
+                    <p>Platform crowdfunding dan donasi online berbasis cloud untuk membantu sesama dengan cara yang
+                        mudah, transparan, dan terpercaya.</p>
                     <div class="social-links mt-4">
                         <a href="#" class="text-light me-3"><i class="fab fa-facebook fa-lg"></i></a>
                         <a href="#" class="text-light me-3"><i class="fab fa-twitter fa-lg"></i></a>
@@ -286,10 +296,13 @@
                 <div class="col-lg-4 mb-4">
                     <h5 class="mb-4">Menu Cepat</h5>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{{ url('/') }}" class="text-light text-decoration-none">Beranda</a></li>
-                        <li class="mb-2"><a href="#campaigns" class="text-light text-decoration-none">Kampanye</a></li>
+                        <li class="mb-2"><a href="{{ url('/') }}"
+                                class="text-light text-decoration-none">Beranda</a></li>
+                        <li class="mb-2"><a href="#campaigns" class="text-light text-decoration-none">Kampanye</a>
+                        </li>
                         <li class="mb-2"><a href="#about" class="text-light text-decoration-none">Tentang</a></li>
-                        <li class="mb-2"><a href="{{ route('admin.login') }}" class="text-light text-decoration-none">Admin Login</a></li>
+                        <li class="mb-2"><a href="{{ route('admin.login') }}"
+                                class="text-light text-decoration-none">Admin Login</a></li>
                     </ul>
                 </div>
             </div>
@@ -307,7 +320,6 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Animated counter
@@ -333,57 +345,64 @@
 
                 if (data.success) {
                     // Update statistics
-                    animateCounter(document.getElementById('totalDonations'),
-                                  data.data.statistics.total_donations);
-                    animateCounter(document.getElementById('totalCampaigns'),
-                                  data.data.statistics.total_campaigns);
-                    animateCounter(document.getElementById('totalDonors'),
-                                  data.data.statistics.total_donors);
+                    if (document.getElementById('totalDonations'))
+                        animateCounter(document.getElementById('totalDonations'), data.data.statistics.total_donations);
+                    if (document.getElementById('totalCampaigns'))
+                        animateCounter(document.getElementById('totalCampaigns'), data.data.statistics.total_campaigns);
+                    if (document.getElementById('totalDonors'))
+                        animateCounter(document.getElementById('totalDonors'), data.data.statistics.total_donors);
 
                     // Load campaigns
                     const container = document.getElementById('campaignsContainer');
-                    container.innerHTML = '';
+                    if (container) {
+                        container.innerHTML = '';
+                        data.data.featured_campaigns.forEach(campaign => {
+                            // Hitung progress
+                            let progress = 0;
+                            if (campaign.target_amount > 0) {
+                                progress = (campaign.current_amount / campaign.target_amount) * 100;
+                            }
 
-                    data.data.featured_campaigns.forEach(campaign => {
-                        const campaignCard = `
-                            <div class="col-md-4 mb-4">
-                                <div class="campaign-card card shadow">
-                                    <img src="${campaign.image_url || 'https://via.placeholder.com/600x400/667eea/ffffff?text=DonasiKita'}"
-                                         class="card-img-top" alt="${campaign.title}">
-                                    <div class="card-body">
-                                        <h5 class="card-title fw-bold">${campaign.title}</h5>
-                                        <p class="card-text text-muted">${campaign.description}</p>
+                            const campaignCard = `
+                                <div class="col-md-4 mb-4">
+                                    <div class="campaign-card card shadow h-100">
+                                        <img src="${campaign.image_url || 'https://via.placeholder.com/600x400/667eea/ffffff?text=DonasiKita'}"
+                                             class="card-img-top" alt="${campaign.title}">
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title fw-bold">${campaign.title}</h5>
+                                            <p class="card-text text-muted small flex-grow-1">${campaign.description.substring(0, 100)}...</p>
 
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span>Terkumpul</span>
-                                                <span>${campaign.progress_percentage.toFixed(1)}%</span>
-                                            </div>
-                                            <div class="progress">
-                                                <div class="progress-bar" style="width: ${campaign.progress_percentage}%"></div>
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span class="small">Terkumpul</span>
+                                                    <span class="small fw-bold">${progress.toFixed(0)}%</span>
+                                                </div>
+                                                <div class="progress mb-3">
+                                                    <div class="progress-bar" style="width: ${progress}%"></div>
+                                                </div>
+
+                                                <div class="row mb-3 small">
+                                                    <div class="col-6">
+                                                        <span class="text-muted d-block">Target</span>
+                                                        <span class="fw-bold">Rp ${parseInt(campaign.target_amount).toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span class="text-muted d-block">Terkumpul</span>
+                                                        <span class="fw-bold text-success">Rp ${parseInt(campaign.current_amount).toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                </div>
+
+                                                <a href="/donation/create?campaign_id=${campaign.id}" class="btn btn-primary w-100 rounded-pill">
+                                                    <i class="fas fa-donate me-2"></i>Donasi Sekarang
+                                                </a>
                                             </div>
                                         </div>
-
-                                        <div class="row mb-3">
-                                            <div class="col-6">
-                                                <small class="text-muted">Target</small>
-                                                <p class="mb-0 fw-bold">Rp ${campaign.target_amount.toLocaleString('id-ID')}</p>
-                                            </div>
-                                            <div class="col-6 text-end">
-                                                <small class="text-muted">Terkumpul</small>
-                                                <p class="mb-0 fw-bold text-success">Rp ${campaign.current_amount.toLocaleString('id-ID')}</p>
-                                            </div>
-                                        </div>
-
-                                        <a href="/donation/create?campaign_id=${campaign.id}" class="btn btn-primary w-100">
-                                            <i class="fas fa-donate me-2"></i>Donasi Sekarang
-                                        </a>
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                        container.innerHTML += campaignCard;
-                    });
+                            `;
+                            container.innerHTML += campaignCard;
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Error loading home data:', error);
@@ -395,7 +414,7 @@
 
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -408,4 +427,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -157,14 +157,3 @@
 
         <div class="mt-4">
             <small class="text-muted">
-                <i class="fas fa-info-circle me-1"></i>
-                Butuh bantuan? Hubungi <a href="mailto:admin@donasikita.id"
-                    class="text-decoration-none">admin@donasikita.id</a>
-            </small>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>

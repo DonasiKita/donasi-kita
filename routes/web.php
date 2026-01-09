@@ -1,13 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\AuthController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
-use App\Http\Controllers\Admin\DonationController as AdminDonationController;
-use App\Http\Controllers\DonationController;
-use App\Http\Controllers\HomeController;
+use Illuminate\Support\Facades\Auth;
+
+// Import Models
 use App\Models\Campaign;
+
+// Import Controllers Public
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\DonationController;
+
+// Import Controllers Admin
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,26 +21,31 @@ use App\Models\Campaign;
 |--------------------------------------------------------------------------
 */
 
-// 1. Public Homepage
-// Mengembalikan view 'home' yang berisi script fetch('/api/')
+// ====================================================
+// 1. AREA PUBLIK (BISA DIAKSES TANPA LOGIN)
+// ====================================================
+
+// Halaman Utama (Landing Page)
 Route::get('/', function () {
     return view('home');
 })->name('home');
 
-// Rute ini tetap dipertahankan jika Anda ingin akses via Controller HTML
-Route::get('/home', [HomeController::class, 'index'])->name('homepage');
-
-// 2. Campaign Public Routes
+// Halaman Daftar Semua Kampanye
+// (Tombol "Mulai Donasi" di home akan mengarah ke sini)
 Route::get('/campaigns', function () {
+    // Ambil kampanye yang aktif, urutkan terbaru, pagination 9 per halaman
     $campaigns = Campaign::where('is_active', true)
         ->latest()
         ->paginate(9);
+
     return view('campaigns.index', compact('campaigns'));
 })->name('campaigns.index');
 
+// Halaman Detail Kampanye
 Route::get('/campaigns/{id}', function ($id) {
+    // Ambil detail kampanye beserta 10 donasi terakhir yang SUKSES (paid)
     $campaign = Campaign::with(['donations' => function($query) {
-        $query->where('payment_status', 'success')
+        $query->where('payment_status', 'paid')
               ->latest()
               ->limit(10);
     }])->findOrFail($id);
@@ -42,38 +53,57 @@ Route::get('/campaigns/{id}', function ($id) {
     return view('campaigns.show', compact('campaign'));
 })->name('campaigns.show');
 
-// 3. Donation Routes (Public / User Side)
+// Group Route Donasi (Form, Simpan, Bayar)
 Route::prefix('donation')->name('donation.')->group(function () {
+
+    // Form Input Nominal & Data Diri (Step 1)
     Route::get('/create', [DonationController::class, 'create'])->name('create');
+
+    // Proses Simpan ke Database (Step 2)
     Route::post('/store', [DonationController::class, 'store'])->name('store');
+
+    // Halaman Pembayaran / Snap Midtrans (Step 3)
     Route::get('/payment/{donation}', [DonationController::class, 'payment'])->name('payment');
-    Route::get('/status/{orderId}', [DonationController::class, 'status'])->name('status');
+
+    // Halaman Sukses setelah bayar
     Route::get('/success', [DonationController::class, 'success'])->name('success');
-    Route::get('/failed', [DonationController::class, 'failed'])->name('failed');
-    Route::post('/webhook/midtrans', [DonationController::class, 'webhook'])->name('webhook');
 });
 
-// 4. Admin Routes
+// Route Default Laravel Auth (Opsional, biasanya untuk redirect setelah login user biasa)
+Route::get('/home', [HomeController::class, 'index'])->name('user.dashboard');
+
+
+// ====================================================
+// 2. AREA ADMIN (WAJIB LOGIN & ROLE ADMIN)
+// ====================================================
+
 Route::prefix('admin')->name('admin.')->group(function () {
-    // Authentication
+
+    // Halaman Login Admin
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->name('login.post');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Protected Admin Routes
+    // Group Middleware (Hanya bisa diakses jika sudah login sebagai admin)
     Route::middleware(['auth', 'admin'])->group(function () {
-        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Menggunakan alias AdminCampaignController untuk menghindari bentrok
-        Route::resource('campaigns', AdminCampaignController::class)->except(['show']);
-        Route::get('campaigns/{campaign}', [AdminCampaignController::class, 'show'])->name('campaigns.show');
+        // Dashboard Utama
+        Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        // Perbaikan: Menampilkan daftar donasi di panel admin
-        Route::get('donations', [AdminDonationController::class, 'index'])->name('donations.index');
+        // Kelola Donasi (Riwayat & Widget)
+        Route::get('donations', [AdminController::class, 'donations'])->name('donations.index');
+
+        // Kelola Kampanye (CRUD: Create, Read, Update, Delete)
+        Route::resource('campaigns', AdminCampaignController::class);
+
+        // Halaman Tambahan (BGDN)
+        Route::get('bgdn', [AdminController::class, 'bgdn'])->name('bgdn');
     });
 });
 
-// 5. Fallback Route (404)
+// ====================================================
+// 3. FALLBACK (JIKA HALAMAN TIDAK DITEMUKAN)
+// ====================================================
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });

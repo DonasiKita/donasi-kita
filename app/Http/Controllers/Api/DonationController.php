@@ -4,20 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Donation;
-use App\Models\Payment;
+// use App\Models\Payment; // Opsional: Jika Anda ingin memisahkan tabel payment, tapi biasanya disatukan di tabel donations untuk simplifikasi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class DonationController extends Controller
 {
+    /**
+     * Konfigurasi Midtrans di Constructor
+     */
+    public function __construct()
+    {
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$isProduction = config('services.midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+    }
+
     /**
      * Show donation form (guest)
      */
     public function create($campaignId)
     {
         $campaign = Campaign::findOrFail($campaignId);
-
         return view('donation.create', compact('campaign'));
     }
 
@@ -26,115 +38,114 @@ class DonationController extends Controller
      */
     public function store(Request $request, $campaignId)
     {
+        // 1. Validasi Input
         $validated = $request->validate([
             'donor_name' => 'required|string|max:100',
             'donor_email' => 'required|email|max:100',
             'amount' => 'required|numeric|min:1000',
             'message' => 'nullable|string|max:500',
-            'is_anonymous' => 'boolean',
-            'payment_method' => 'required|in:qris,bank_transfer,gopay,shopeepay',
+            'is_anonymous' => 'nullable|boolean', // Diubah ke nullable agar tidak error jika checkbox tidak dicentang
         ]);
 
         DB::beginTransaction();
 
         try {
-            // 1. Create donation record
+            // 2. Generate Order ID Unik
+            // Format: DON-{CampaignID}-{Timestamp}-{Random}
+            $orderId = 'DON-' . $campaignId . '-' . time() . '-' . Str::random(5);
+
+            // 3. Simpan Record Donasi (Status awal: Pending)
             $donation = Donation::create([
                 'campaign_id' => $campaignId,
+                'user_id' => auth()->id() ?? null, // Support logged in user or guest
+                'midtrans_order_id' => $orderId,   // Pastikan kolom ini ada di database
                 'donor_name' => $validated['donor_name'],
                 'donor_email' => $validated['donor_email'],
                 'amount' => $validated['amount'],
                 'message' => $validated['message'] ?? null,
-                'is_anonymous' => $validated['is_anonymous'] ?? false,
-                'user_id' => null, // Guest donation
+                'is_anonymous' => $request->has('is_anonymous'),
+                'payment_status' => 'pending',     // pending, paid, failed
             ]);
 
-            // 2. Create pending payment record
-            $payment = Payment::create([
-                'payment_id' => 'DONASI-' . Str::upper(Str::random(10)) . '-' . time(),
-                'amount' => $validated['amount'],
-                'payment_method' => $validated['payment_method'],
-                'status' => 'pending',
-                'donation_id' => $donation->id,
-                'response_data' => null,
-            ]);
+            // 4. Siapkan Parameter untuk Midtrans Snap
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $orderId,
+                    'gross_amount' => (int) $validated['amount'],
+                ],
+                'customer_details' => [
+                    'first_name' => $validated['donor_name'],
+                    'email' => $validated['donor_email'],
+                ],
+                'item_details' => [
+                    [
+                        'id' => 'CAMPAIGN-' . $campaignId,
+                        'price' => (int) $validated['amount'],
+                        'quantity' => 1,
+                        'name' => 'Donasi Kampanye ID #' . $campaignId,
+                    ]
+                ]
+            ];
 
-            // 3. Update campaign current amount (temporary, will be confirmed after payment)
-            // $campaign = Campaign::find($campaignId);
-            // $campaign->increment('current_amount', $validated['amount']);
+            // 5. Minta Snap Token ke Midtrans
+            $snapToken = Snap::getSnapToken($params);
+
+            // 6. Simpan Snap Token ke Database
+            $donation->update(['snap_token' => $snapToken]);
 
             DB::commit();
 
-            // 4. Redirect to payment page (Midtrans integration later)
-            return redirect()->route('donation.success', $donation->id)
-                ->with('success', 'Donasi berhasil diajukan! Silakan lakukan pembayaran.');
+            // 7. Redirect ke halaman pembayaran (Success Page dengan tombol Pay)
+            return redirect()->route('donation.payment', $donation->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
+            return back()->with('error', 'Gagal memproses donasi: ' . $e->getMessage())->withInput();
         }
     }
 
     /**
-     * Show donation success page
+     * Halaman Pembayaran (Menampilkan Tombol Pay Midtrans)
+     * Menggantikan function success() lama
      */
-    public function success($donationId)
+    public function payment($donationId)
     {
-        $donation = Donation::with(['campaign', 'payment'])->findOrFail($donationId);
+        $donation = Donation::with('campaign')->findOrFail($donationId);
 
-        // Generate payment instructions based on payment method
-        $paymentInstructions = $this->getPaymentInstructions($donation->payment);
+        // Jika sudah dibayar, jangan tampilkan tombol bayar lagi
+        if ($donation->payment_status == 'paid') {
+            return redirect()->route('campaign.show', $donation->campaign_id)
+                ->with('success', 'Donasi ini sudah berhasil dibayar sebelumnya.');
+        }
 
-        return view('donation.success', compact('donation', 'paymentInstructions'));
+        return view('donation.payment', compact('donation'));
     }
 
     /**
-     * Get payment instructions (dummy for now, will integrate with Midtrans)
+     * Callback/Webhook dari Midtrans (Wajib ada untuk update status otomatis)
+     * Route: POST /api/midtrans-callback
      */
-    private function getPaymentInstructions($payment)
+    public function callback(Request $request)
     {
-        $instructions = [];
+        $serverKey = config('services.midtrans.server_key');
+        $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        switch ($payment->payment_method) {
-            case 'qris':
-                $instructions = [
-                    'title' => 'QRIS Payment',
-                    'steps' => [
-                        'Buka aplikasi mobile banking/e-wallet Anda',
-                        'Pilih menu Scan/Pay QRIS',
-                        'Scan QR code di bawah ini',
-                        'Konfirmasi pembayaran',
-                    ],
-                    'qr_code' => 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($payment->payment_id),
-                ];
-                break;
+        if ($hashed == $request->signature_key) {
+            $donation = Donation::where('midtrans_order_id', $request->order_id)->first();
 
-            case 'bank_transfer':
-                $instructions = [
-                    'title' => 'Transfer Bank',
-                    'steps' => [
-                        'Transfer ke rekening: BCA 123-456-7890 (DONASIKITA)',
-                        'Masukkan nominal: Rp ' . number_format($payment->amount, 0, ',', '.'),
-                        'Gunakan kode unik: ' . substr($payment->payment_id, -3),
-                        'Konfirmasi via WhatsApp ke 081234567890',
-                    ],
-                    'account' => 'BCA 123-456-7890 a.n DonasiKita',
-                ];
-                break;
+            if ($donation) {
+                if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
+                    $donation->update(['payment_status' => 'paid']);
 
-            default:
-                $instructions = [
-                    'title' => 'Pembayaran ' . ucfirst($payment->payment_method),
-                    'steps' => [
-                        'Pembayaran akan diproses melalui Midtrans',
-                        'Anda akan diarahkan ke halaman pembayaran',
-                        'Ikuti instruksi di halaman tersebut',
-                    ],
-                ];
+                    // Update total donasi kampanye
+                    $campaign = Campaign::find($donation->campaign_id);
+                    $campaign->increment('current_amount', $donation->amount);
+                    $campaign->increment('backer_count'); // Opsional: Tambah jumlah donatur
+                } elseif ($request->transaction_status == 'expire' || $request->transaction_status == 'cancel' || $request->transaction_status == 'deny') {
+                    $donation->update(['payment_status' => 'failed']);
+                }
+            }
         }
-
-        return $instructions;
+        return response()->json(['status' => 'success']);
     }
 }

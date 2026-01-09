@@ -38,6 +38,7 @@ class CampaignController extends Controller
             'title'         => 'required|string|max:255',
             'description'   => 'required|string',
             'target_amount' => 'required|numeric|min:1000',
+            'deadline'      => 'required|date|after:today', // Validasi Deadline (Wajib & Harus hari esok dst)
             'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active'     => 'nullable|boolean',
         ]);
@@ -53,7 +54,7 @@ class CampaignController extends Controller
         $imageUrl = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('campaigns', 'public');
-            $imageUrl = Storage::url($imagePath);
+            $imageUrl = Storage::url($imagePath); // Hasilnya: /storage/campaigns/namafile.jpg
         }
 
         Campaign::create([
@@ -62,8 +63,10 @@ class CampaignController extends Controller
             'description'    => $validated['description'],
             'target_amount'  => $validated['target_amount'],
             'current_amount' => 0,
+            'backer_count'   => 0, // Default 0 donatur
+            'deadline'       => $validated['deadline'], // Simpan Deadline
             'image_url'      => $imageUrl,
-            'is_active'      => $request->boolean('is_active'),
+            'is_active'      => $request->boolean('is_active', true), // Default true jika null
         ]);
 
         return redirect()
@@ -75,14 +78,14 @@ class CampaignController extends Controller
      * Show campaign detail
      */
     public function show($id)
-{
-    
-    $campaign = Campaign::with(['donations' => function($q) {
-        $q->latest();
-    }])->findOrFail($id);
+    {
+        // Eager Load donasi yang statusnya 'paid' saja
+        $campaign = Campaign::with(['donations' => function($q) {
+            $q->where('payment_status', 'paid')->latest();
+        }])->findOrFail($id);
 
-    return view('admin.campaigns.show', compact('campaign'));
-}
+        return view('admin.campaigns.show', compact('campaign'));
+    }
 
     /**
      * Edit campaign
@@ -104,6 +107,7 @@ class CampaignController extends Controller
             'title'         => 'required|string|max:255',
             'description'   => 'required|string',
             'target_amount' => 'required|numeric|min:1000',
+            'deadline'      => 'required|date', // Validasi Deadline saat update
             'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active'     => 'nullable|boolean',
         ]);
@@ -120,7 +124,9 @@ class CampaignController extends Controller
 
         // Upload image baru
         if ($request->hasFile('image')) {
+            // Hapus gambar lama jika ada
             if ($campaign->image_url) {
+                // Konversi URL (/storage/campaigns/...) kembali ke Path (campaigns/...)
                 $oldPath = str_replace('/storage/', '', $campaign->image_url);
                 Storage::disk('public')->delete($oldPath);
             }
@@ -134,6 +140,7 @@ class CampaignController extends Controller
             'slug'          => $slug,
             'description'   => $validated['description'],
             'target_amount' => $validated['target_amount'],
+            'deadline'      => $validated['deadline'], // Update Deadline
             'is_active'     => $request->boolean('is_active'),
         ]);
 
